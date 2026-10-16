@@ -6,7 +6,7 @@ This repository contains the starter code to get started on the DTU Deep Learnin
 
 The data comes from the [OpenADMET CYP Inhibition Blind Challenge](https://huggingface.co/spaces/openadmet/cyp-challenge). The challenge ends on November 3, 2026, before this project starts, so we repurpose its training data for this project: we split it into our own train/validation/test sets and run our own leaderboard.
 
-It gives you a simple, working fine-tuning setup to build on:
+The repo gives you a simple, working fine-tuning setup to build on:
 
 - **Atom-JEPA**: code for loading the pretrained Atom-JEPA model and fine-tuning it with a simple readout head.
 - **Three baselines** to compare against: an MLP on Morgan fingerprints, on RDKit descriptors, and on both.
