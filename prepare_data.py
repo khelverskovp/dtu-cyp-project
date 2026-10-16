@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Download labelled CYP training data, generate conformers, and split 70/15/15."""
+"""Download the CYP regression and classification training data, generate conformers,
+and split each task 70/15/15 (a molecule in both tasks gets the same split)."""
 import argparse
 from concurrent.futures import ProcessPoolExecutor
 import hashlib
@@ -19,6 +20,7 @@ ATOM_JEPA_VERSION = importlib.metadata.version('atom-jepa')
 REG = [f'{c}_pIC50_direct_inhibition' for c in ['CYP1A2', 'CYP2C9', 'CYP2D6', 'CYP3A4']]
 CLS = ['CYP2D6_is_TDI', 'CYP3A4_is_TDI']
 FILES = ['cyp-challenge-TRAIN_inhibition.csv', 'cyp-challenge-TRAIN_TDI.csv']
+TASK_LABELS = {'regression': REG, 'classification': CLS}
 
 
 def conformer(job):
@@ -137,11 +139,19 @@ def main():
     failed = set(report.loc[report.error != '', 'key'])
     frame[frame.key.isin(failed)].to_csv(args.out / 'excluded_conformer_failures.csv', index=False)
     frame = frame[~frame.key.isin(failed)].reset_index(drop=True)
+    # Splits are assigned over both tasks together, then each task gets its own dataset.
     frame = assign_splits(frame, args.seed, args.val_fraction, args.test_fraction)
-    for split in ['train', 'val', 'test']:
-        frame[frame.split == split].to_csv(args.out / f'{split}.csv', index=False)
-    manifest = {'config': config, 'sha256': hashes,
-                'counts': frame.split.value_counts().to_dict(), 'failed_conformers': len(failed)}
+    extra = ['canonical_smiles', 'key', 'split']
+    columns = {'regression': list(reg.columns) + extra,
+               'classification': ['Molecule_Name', 'SMILES'] + CLS + extra}
+    counts = {}
+    for task, labels in TASK_LABELS.items():
+        data = frame[frame[labels].notna().any(axis=1)][columns[task]]
+        (args.out / task).mkdir(exist_ok=True)
+        for split in ['train', 'val', 'test']:
+            data[data.split == split].to_csv(args.out / task / f'{split}.csv', index=False)
+        counts[task] = data.split.value_counts().to_dict()
+    manifest = {'config': config, 'sha256': hashes, 'counts': counts, 'failed_conformers': len(failed)}
     manifest_path.write_text(json.dumps(manifest, indent=2))
     print(json.dumps(manifest, indent=2))
 

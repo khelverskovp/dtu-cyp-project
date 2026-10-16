@@ -33,7 +33,7 @@ python -c 'import torch; assert torch.cuda.is_available(), "CUDA-enabled PyTorch
 
 # Data must be prepared first with: bsub < prepare_data.sh
 for f in train val test; do
-    [[ -f "data/$f.csv" ]] || { echo "Missing data/$f.csv; run prepare_data.sh first" >&2; exit 2; }
+    [[ -f "data/$TASK/$f.csv" ]] || { echo "Missing data/$TASK/$f.csv; run prepare_data.sh first" >&2; exit 2; }
 done
 # Results go to runs/<task>/<model>/<timestamp>/ (set in conf/config.yaml).
 python -u finetune.py model="$MODEL" task="$TASK" seed=42 device=cuda $OVERRIDES

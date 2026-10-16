@@ -16,7 +16,7 @@ Your job is to extend it: add at least one more foundation model, try better rea
 
 | Path | What it does |
 |---|---|
-| `prepare_data.py` | Downloads the data, generates 3D conformers and makes the 70/15/15 train/val/test split |
+| `prepare_data.py` | Downloads the two datasets, generates 3D conformers and splits each into 70/15/15 train/val/test |
 | `finetune.py` | Trains one model, picks the best epoch on validation, then evaluates on test |
 | `models/atom_jepa.py` | Atom-JEPA encoder + readout head |
 | `models/baselines.py` | Morgan / RDKit features + readout head |
@@ -40,7 +40,7 @@ python -m pip install -r requirements.txt
 
 ## Run on DTU HPC
 
-**1. Prepare the data (once).** This writes `data/` and takes a few minutes:
+**1. Prepare the data (once).** This writes `data/regression/` and `data/classification/` (each with `train.csv`, `val.csv`, `test.csv`) and takes a few minutes:
 
 ```bash
 bsub < prepare_data.sh
@@ -58,10 +58,12 @@ bsub -env "MODEL=atom_jepa, OVERRIDES=readout=mlp train.epochs=10" < finetune.sh
 
 ## Tasks and results
 
-- **Regression**: pIC50 for CYP1A2, CYP2C9, CYP2D6 and CYP3A4. Leaderboard score: MA-ST-RAE, the soft-threshold relative absolute error averaged over the four enzymes (lower is better).
-- **Classification**: time-dependent inhibition (TDI) for CYP2D6 and CYP3A4. Leaderboard score: MCC, averaged over the two enzymes (higher is better).
+There are two separate datasets from the [challenge data](https://huggingface.co/datasets/openadmet/cyp-challenge-train-test), one per task:
 
-Missing labels are ignored in the loss. Each run is saved in `runs/<task>/<model>/<timestamp>/` with the validation history, the best checkpoint, `test_metrics.json` and `test_predictions.csv`. Use the same splits for every model, choose settings on validation, and use the test split only for the final comparison.
+- **Regression** (`cyp-challenge-TRAIN_inhibition.csv`): pIC50 for CYP1A2, CYP2C9, CYP2D6 and CYP3A4. Leaderboard score: MA-ST-RAE, the soft-threshold relative absolute error averaged over the four enzymes (lower is better).
+- **Classification** (`cyp-challenge-TRAIN_TDI.csv`): time-dependent inhibition (TDI) for CYP2D6 and CYP3A4. Leaderboard score: MCC, averaged over the two enzymes (higher is better).
+
+Many molecules appear in both datasets; they are always in the same split for both tasks, so you can safely combine the tasks. Missing labels are ignored in the loss. Each run is saved in `runs/<task>/<model>/<timestamp>/` with the validation history, the best checkpoint, `test_metrics.json` and `test_predictions.csv`. Use the same splits for every model, choose settings on validation, and use the test split only for the final comparison.
 
 ## Leaderboard
 
@@ -78,7 +80,7 @@ The original challenge ends before the course, so we run our own leaderboard on 
 
 - **Fine-tune and tune on the validation set, never on the test set.** Choose models, hyperparameters and epochs by validation scores only. Submit test predictions only for models you have already chosen.
 - **One submission per team per task per day** (Copenhagen time). Rejected submissions do not count.
-- **Use the splits from `prepare_data.py` with the default seed.** Don't train on test molecules or look at their labels. `data/test.csv` contains the labels and the data is public, so the leaderboard relies on your honesty.
+- **Use the splits from `prepare_data.py` with the default seed.** Don't train on test molecules or look at their labels. `data/<task>/test.csv` contains the labels and the data is public, so the leaderboard relies on your honesty.
 - **Use the same team name** for all of your team's submissions.
 
 ## Models and readouts

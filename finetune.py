@@ -92,8 +92,8 @@ def main(cfg):
     torch.cuda.manual_seed_all(cfg.seed)
     task = cfg.task
     targets = REG if task == 'regression' else CLS
-    train_all = pd.read_csv(data / 'train.csv')
-    val_all = pd.read_csv(data / 'val.csv')
+    train_all = pd.read_csv(data / task / 'train.csv')
+    val_all = pd.read_csv(data / task / 'val.csv')
     frame = pd.concat([train_all, val_all], ignore_index=True)
     train = train_all[train_all[targets].notna().any(axis=1)].copy()
     val = val_all[val_all[targets].notna().any(axis=1)].copy()
@@ -127,7 +127,7 @@ def main(cfg):
     config.update(targets=targets, output_dir=str(out),
                   versions={k: importlib.metadata.version(k) for k in packages},
                   preparation=json.loads((data / 'manifest.json').read_text()),
-                  split_sha256={name: hashlib.sha256((data / f'{name}.csv').read_bytes()).hexdigest()
+                  split_sha256={name: hashlib.sha256((data / task / f'{name}.csv').read_bytes()).hexdigest()
                                 for name in ['train', 'val', 'test']})
     (out / 'config.json').write_text(json.dumps(config, indent=2))
     frame[['Molecule_Name', 'key', 'split']].to_csv(out / 'split.csv', index=False)
@@ -175,7 +175,7 @@ def main(cfg):
     vp[targets] = validation_predictions
     vp.to_csv(out / 'validation_predictions.csv', index=False)
     # Only now load and evaluate the held-out labelled test split.
-    test = pd.read_csv(data / 'test.csv')
+    test = pd.read_csv(data / task / 'test.csv')
     if not len(test):
         raise ValueError('Empty test set')
     if set(frame.canonical_smiles) & set(test.canonical_smiles):
