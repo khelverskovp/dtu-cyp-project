@@ -94,7 +94,7 @@ The original challenge ends before this project starts, so we run our own leader
 | `rdkit_mlp` | 200 normalized RDKit descriptors | `mlp` |
 | `morgan_rdkit_mlp` | Both, concatenated | `mlp` |
 
-Any readout works with any model, e.g. `model=atom_jepa readout=linear`.
+The baselines follow the MLP baselines in the [Atom-JEPA repository](https://github.com/khelverskovp/atom-jepa). Any readout works with any model, e.g. `model=atom_jepa readout=linear`.
 
 > **Extending the code is the core of the project.** Below is how to add your own readout head and your own model.
 
@@ -122,8 +122,6 @@ A model turns a batch of molecules into embeddings and passes them through a rea
 4. Run it like the others: `bsub -env "MODEL=my_model, TASK=regression" < finetune.sh`.
 
 Every model goes through the same training loop, metrics and test evaluation, so your results compare directly with the baselines.
-
-The baselines follow the MLP baselines in the [Atom-JEPA repository](https://github.com/khelverskovp/atom-jepa).
 
 ## Notes
 
