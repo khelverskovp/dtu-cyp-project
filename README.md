@@ -10,7 +10,7 @@ It gives you a simple, working fine-tuning setup to build on:
 - **Three baselines** to compare against: an MLP on Morgan fingerprints, on RDKit descriptors, and on both.
 - **A simple fine-tuning protocol**: fixed train/validation/test splits, one training loop for all models, and the challenge metrics.
 
-Your job is to extend it: add at least one more foundation model, try better readouts and training, and compare. Submit your test predictions to the [course leaderboard](https://khelverskovp.github.io/dtu-cyp-leaderboard/) to see how you rank.
+Your job is to extend it: add at least one more foundation model, try better readouts and training, and compare. You can submit your test predictions to the [project leaderboard](https://khelverskovp.github.io/dtu-cyp-leaderboard/) to see how you rank.
 
 ## What is in the repo
 
@@ -67,7 +67,7 @@ Many molecules appear in both datasets; they are always in the same split for bo
 
 ## Leaderboard
 
-The original challenge ends before the course, so we run our own leaderboard on this repo's test split: **https://khelverskovp.github.io/dtu-cyp-leaderboard/**. There is one board for regression and one for classification, each showing the best submission per team.
+The original challenge ends before this project starts, so we run our own leaderboard on this repo's test split: **https://khelverskovp.github.io/dtu-cyp-leaderboard/**. There is one board for regression and one for classification, each showing the best submission per team.
 
 **How to submit**
 
