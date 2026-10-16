@@ -58,8 +58,8 @@ bsub -env "MODEL=atom_jepa, OVERRIDES=readout=mlp train.epochs=10" < finetune.sh
 
 ## Tasks and results
 
-- **Regression**: pIC50 for CYP1A2, CYP2C9, CYP2D6 and CYP3A4. Main metric: macro ST-RAE (lower is better).
-- **Classification**: time-dependent inhibition (TDI) for CYP2D6 and CYP3A4. Main metric: macro MCC (higher is better).
+- **Regression**: pIC50 for CYP1A2, CYP2C9, CYP2D6 and CYP3A4. Leaderboard score: MA-ST-RAE, the soft-threshold relative absolute error averaged over the four enzymes (lower is better).
+- **Classification**: time-dependent inhibition (TDI) for CYP2D6 and CYP3A4. Leaderboard score: MCC, averaged over the two enzymes (higher is better).
 
 Missing labels are ignored in the loss. Each run is saved in `runs/<task>/<model>/<timestamp>/` with the validation history, the best checkpoint, `test_metrics.json` and `test_predictions.csv`. Use the same splits for every model, choose settings on validation, and use the test split only for the final comparison.
 
