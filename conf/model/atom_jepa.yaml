@@ -1,0 +1,19 @@
+# @package _global_
+# Pretrained Atom-JEPA encoder + readout head, fine-tuned end to end.
+defaults:
+  - override /readout: linear
+
+model:
+  name: atom_jepa
+  type: atom_jepa
+  checkpoint: molecules   # Released encoder name or local checkpoint path
+  precision: fp32         # bf16 is faster on L40s/A100 but emulated (slower) on V100
+  freeze_encoder: false   # true trains only the readout head
+  encoder_lr: 1.0e-5
+  readout_lr: 1.0e-3
+
+train:
+  epochs: 20
+  batch_size: 8
+  weight_decay: 1.0e-4
+  grad_clip: 1.0

@@ -1,0 +1,18 @@
+# @package _global_
+# Baseline: 200 RDKit 2D descriptors (descriptastorus, CDF-normalized) -> MLP.
+defaults:
+  - override /readout: mlp
+
+model:
+  name: rdkit_mlp
+  type: features
+  featurizers: [rdkit]
+  scaling: none           # Descriptors are already normalized to [0, 1]
+  readout_lr: 1.0e-3
+  feature_workers: 4
+
+train:
+  epochs: 100
+  batch_size: 64
+  weight_decay: 1.0e-2
+  grad_clip: 10.0

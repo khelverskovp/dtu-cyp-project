@@ -1,0 +1,22 @@
+# @package _global_
+# Baseline: Morgan count fingerprint + RDKit 2D descriptors (concatenated) -> MLP.
+defaults:
+  - override /readout: mlp
+
+model:
+  name: morgan_rdkit_mlp
+  type: features
+  featurizers: [morgan, rdkit]
+  morgan:
+    radius: 2
+    n_bits: 1024
+    use_counts: true
+  scaling: quantile       # Fitted on the training split only
+  readout_lr: 1.0e-3
+  feature_workers: 4
+
+train:
+  epochs: 100
+  batch_size: 64
+  weight_decay: 1.0e-2
+  grad_clip: 10.0
