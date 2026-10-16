@@ -30,8 +30,6 @@ Along the way you can submit your test predictions to the [project leaderboard](
 
 ## Setup
 
-Use Python 3.12.
-
 ```bash
 git clone https://github.com/khelverskovp/dtu-cyp-project.git
 cd dtu-cyp-project
@@ -44,7 +42,7 @@ python -m pip install -r requirements.txt
 
 ## Run on DTU HPC
 
-**1. Prepare the data (once).** This writes `data/regression/` and `data/classification/` (each with `train.csv`, `val.csv`, `test.csv`) and takes a few minutes:
+**1. Prepare the data (once).** This writes `data/regression/` and `data/classification/` (each with `train.csv`, `val.csv`, `test.csv`) and takes a few minutes. Open a terminal and run:
 
 ```bash
 bsub < prepare_data.sh
@@ -96,7 +94,34 @@ The original challenge ends before this project starts, so we run our own leader
 | `rdkit_mlp` | 200 normalized RDKit descriptors | `mlp` |
 | `morgan_rdkit_mlp` | Both, concatenated | `mlp` |
 
-Any readout works with any model, e.g. `model=atom_jepa readout=linear`. To add a readout, write a class in `models/readouts.py`, register it in `READOUTS` and add `conf/readout/<name>.yaml`. To add a model, follow the pattern in `models/` and add `conf/model/<name>.yaml`.
+Any readout works with any model, e.g. `model=atom_jepa readout=linear`.
+
+> **Extending the code is the core of the project.** Below is how to add your own readout head and your own model.
+
+### Add your own readout
+
+A readout maps a molecule embedding `[batch, in_dim]` to predictions `[batch, n_targets]`.
+
+1. In `models/readouts.py`, write a class whose `__init__` takes `(in_dim, n_targets, **options)` and whose `forward(x)` returns the predictions. `MLPReadout` is a good template.
+2. Register it in the same file: `READOUTS['my_readout'] = MyReadout`.
+3. Add `conf/readout/my_readout.yaml` with `type: my_readout` and your options, e.g. `hidden_dim: 256`.
+4. Use it with any model: `python finetune.py model=atom_jepa readout=my_readout`, or `bsub -env "MODEL=atom_jepa, OVERRIDES=readout=my_readout" < finetune.sh`.
+
+### Add your own model
+
+A model turns a batch of molecules into embeddings and passes them through a readout.
+
+1. Create `models/my_model.py` with an `nn.Module` class. Copy `models/atom_jepa.py` as a template. It needs:
+   - `__init__(cfg, readout, n_targets, data_dir, device)`: load your encoder and build the head with `build_readout(readout, embedding_dim, n_targets)`.
+   - `loader(frame, targets, batch_size, shuffle)`: a `DataLoader` whose batches contain your inputs and the labels as `y`.
+   - `forward(batch)`: returns predictions `[batch, n_targets]`.
+   - `param_groups()`: parameters and learning rates for the optimizer.
+   - `fit_preprocessing(train)`: anything fitted on the training set (can be empty).
+2. Register it in `models/__init__.py`: `MODELS['my_model'] = MyModel`.
+3. Add `conf/model/my_model.yaml`. Copy `conf/model/atom_jepa.yaml` and set `model.name: my_model`, `model.type: my_model`, your model's settings and the `train` settings.
+4. Run it like the others: `bsub -env "MODEL=my_model, TASK=regression" < finetune.sh`.
+
+Every model goes through the same training loop, metrics and test evaluation, so your results compare directly with the baselines.
 
 The baselines follow the MLP baselines in the [Atom-JEPA repository](https://github.com/khelverskovp/atom-jepa).
 
