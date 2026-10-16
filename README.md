@@ -1,6 +1,6 @@
 # CYP Inhibition — Starter Code
 
-[Atom-JEPA](https://github.com/khelverskovp/atom-jepa) · [Challenge](https://huggingface.co/spaces/openadmet/cyp-challenge) · [Dataset](https://huggingface.co/datasets/openadmet/cyp-challenge-train-test)
+**[Leaderboard](https://khelverskovp.github.io/dtu-cyp-leaderboard/)** · [Atom-JEPA](https://github.com/khelverskovp/atom-jepa) · [Challenge](https://huggingface.co/spaces/openadmet/cyp-challenge) · [Dataset](https://huggingface.co/datasets/openadmet/cyp-challenge-train-test)
 
 Starter repository for the DTU Deep Learning project **Predicting CYP Inhibition with Molecular Foundation Models** (project description provided separately as a PDF).
 
@@ -10,7 +10,7 @@ It gives you a simple, working fine-tuning setup to build on:
 - **Three baselines** to compare against: an MLP on Morgan fingerprints, on RDKit descriptors, and on both.
 - **A simple fine-tuning protocol**: fixed train/validation/test splits, one training loop for all models, and the challenge metrics.
 
-Your job is to extend it: add at least one more foundation model, try better readouts and training, and compare.
+Your job is to extend it: add at least one more foundation model, try better readouts and training, and compare. Submit your test predictions to the [course leaderboard](https://khelverskovp.github.io/dtu-cyp-leaderboard/) to see how you rank.
 
 ## What is in the repo
 
@@ -62,6 +62,24 @@ bsub -env "MODEL=atom_jepa, OVERRIDES=readout=mlp train.epochs=10" < finetune.sh
 - **Classification**: time-dependent inhibition (TDI) for CYP2D6 and CYP3A4. Main metric: macro MCC (higher is better).
 
 Missing labels are ignored in the loss. Each run is saved in `runs/<task>/<model>/<timestamp>/` with the validation history, the best checkpoint, `test_metrics.json` and `test_predictions.csv`. Use the same splits for every model, choose settings on validation, and use the test split only for the final comparison.
+
+## Leaderboard
+
+The original challenge ends before the course, so we run our own leaderboard on this repo's test split: **https://khelverskovp.github.io/dtu-cyp-leaderboard/**. There is one board for regression and one for classification, each showing the best submission per team.
+
+**How to submit**
+
+1. Choose your final model on the **validation** set.
+2. Take the `test_predictions.csv` from that run (`runs/<task>/<model>/<timestamp>/`).
+3. [Open a submission](https://github.com/khelverskovp/dtu-cyp-leaderboard/issues/new?template=submission.yml) (needs a GitHub account): enter your team name, the task and a short model description, and drag the CSV into the form.
+4. A bot comments your score on the issue within a few minutes and updates the leaderboard.
+
+**Rules**
+
+- **Fine-tune and tune on the validation set, never on the test set.** Choose models, hyperparameters and epochs by validation scores only. Submit test predictions only for models you have already chosen.
+- **One submission per team per task per day** (Copenhagen time). Rejected submissions do not count.
+- **Use the splits from `prepare_data.py` with the default seed.** Don't train on test molecules or look at their labels. `data/test.csv` contains the labels and the data is public, so the leaderboard relies on your honesty.
+- **Use the same team name** for all of your team's submissions.
 
 ## Models and readouts
 
