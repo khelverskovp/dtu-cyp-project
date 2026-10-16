@@ -31,9 +31,9 @@ case "$TASK" in regression|classification) ;; *) echo "Invalid TASK=$TASK" >&2; 
 nvidia-smi
 python -c 'import torch; assert torch.cuda.is_available(), "CUDA-enabled PyTorch/GPU required"; print(torch.__version__, torch.version.cuda)'
 
-# Data must be prepared first with: bsub < prepare_data_cpu.sh
+# Data must be prepared first with: bsub < prepare_data.sh
 for f in train val test; do
-    [[ -f "data/$f.csv" ]] || { echo "Missing data/$f.csv; run prepare_data_cpu.sh first" >&2; exit 2; }
+    [[ -f "data/$f.csv" ]] || { echo "Missing data/$f.csv; run prepare_data.sh first" >&2; exit 2; }
 done
 # Results go to runs/<task>/<model>/<timestamp>/ (set in conf/config.yaml).
 python -u finetune.py model="$MODEL" task="$TASK" seed=42 device=cuda $OVERRIDES

@@ -22,11 +22,11 @@ Your job is to extend it: add at least one more foundation model, try better rea
 | `models/baselines.py` | Morgan / RDKit features + readout head |
 | `models/readouts.py` | Readout heads (linear, MLP). **Add your own here** |
 | `conf/` | [Hydra](https://hydra.cc) configs: `config.yaml` (shared), `model/` (one per model), `readout/` (one per head) |
-| `prepare_data_cpu.sh`, `finetune.sh` | DTU HPC job scripts. Logs go to `outputs/` |
+| `prepare_data.sh`, `finetune.sh` | DTU HPC job scripts. Logs go to `outputs/` |
 
 ## Setup
 
-Use Python 3.12 (on DTU, load a Python 3.12 module if needed).
+Use Python 3.12.
 
 ```bash
 git clone https://github.com/khelverskovp/dtu-cyp-project.git
@@ -43,7 +43,7 @@ python -m pip install -r requirements.txt
 **1. Prepare the data (once).** This writes `data/` and takes a few minutes:
 
 ```bash
-bsub < prepare_data_cpu.sh
+bsub < prepare_data.sh
 ```
 
 **2. Fine-tune.** Pick the model and task with `-env` (default: Atom-JEPA, regression):
