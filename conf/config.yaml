@@ -1,9 +1,9 @@
 # Shared experiment settings. Choose a model with model=<name> (conf/model/) and
 # a readout head with readout=<name> (conf/readout/; each model sets its own default).
-# Example: python finetune.py model=atom_jepa readout=mlp task=classification train.epochs=50
+# Example: python finetune.py model=atom_jepa readout=linear task=classification train.epochs=50
 defaults:
   - _self_
-  - readout: linear
+  - readout: mlp
   - model: atom_jepa
 
 task: regression        # regression | classification

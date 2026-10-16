@@ -51,7 +51,7 @@ bsub < prepare_data.sh
 ```bash
 bsub < finetune.sh
 bsub -env "MODEL=morgan_mlp, TASK=classification" < finetune.sh
-bsub -env "MODEL=atom_jepa, OVERRIDES=readout=mlp train.epochs=10" < finetune.sh
+bsub -env "MODEL=atom_jepa, OVERRIDES=readout=linear train.epochs=10" < finetune.sh
 ```
 
 `MODEL` is `atom_jepa`, `morgan_mlp`, `rdkit_mlp` or `morgan_rdkit_mlp`. `TASK` is `regression` or `classification`. `OVERRIDES` takes any Hydra settings, separated by spaces. Check jobs with `bjobs`.
@@ -87,12 +87,12 @@ The original challenge ends before the course, so we run our own leaderboard on 
 
 | `model=` | Input | Default readout |
 |---|---|---|
-| `atom_jepa` | 3D conformer → pretrained Atom-JEPA encoder (fine-tuned) | `linear` |
+| `atom_jepa` | 3D conformer → pretrained Atom-JEPA encoder (fine-tuned) | `mlp` |
 | `morgan_mlp` | Morgan count fingerprint | `mlp` |
 | `rdkit_mlp` | 200 normalized RDKit descriptors | `mlp` |
 | `morgan_rdkit_mlp` | Both, concatenated | `mlp` |
 
-Any readout works with any model, e.g. `model=atom_jepa readout=mlp`. To add a readout, write a class in `models/readouts.py`, register it in `READOUTS` and add `conf/readout/<name>.yaml`. To add a model, follow the pattern in `models/` and add `conf/model/<name>.yaml`.
+Any readout works with any model, e.g. `model=atom_jepa readout=linear`. To add a readout, write a class in `models/readouts.py`, register it in `READOUTS` and add `conf/readout/<name>.yaml`. To add a model, follow the pattern in `models/` and add `conf/model/<name>.yaml`.
 
 The baselines follow the MLP baselines in the [Atom-JEPA repository](https://github.com/khelverskovp/atom-jepa).
 
