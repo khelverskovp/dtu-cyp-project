@@ -1,8 +1,10 @@
 # CYP Inhibition — Starter Code
 
-**[Leaderboard](https://khelverskovp.github.io/dtu-cyp-leaderboard/)** · [Atom-JEPA](https://github.com/khelverskovp/atom-jepa) · [Challenge](https://huggingface.co/spaces/openadmet/cyp-challenge) · [Dataset](https://huggingface.co/datasets/openadmet/cyp-challenge-train-test)
+**[Leaderboard](https://khelverskovp.github.io/dtu-cyp-leaderboard/)** · [Atom-JEPA](https://github.com/khelverskovp/atom-jepa) · [Dataset](https://huggingface.co/datasets/openadmet/cyp-challenge-train-test)
 
-Starter repository for the DTU Deep Learning project **Predicting CYP Inhibition with Molecular Foundation Models** (project description provided separately as a PDF).
+This repository contains the starter code to get started on the DTU Deep Learning project **Predicting CYP Inhibition with Molecular Foundation Models**.
+
+The data comes from the [OpenADMET CYP Inhibition Blind Challenge](https://huggingface.co/spaces/openadmet/cyp-challenge). The challenge ends on November 3, 2026, before this project starts, so we repurpose its training data for this project: we split it into our own train/validation/test sets and run our own leaderboard.
 
 It gives you a simple, working fine-tuning setup to build on:
 
