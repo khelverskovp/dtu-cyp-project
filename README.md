@@ -12,7 +12,7 @@ The repo gives you a simple, working fine-tuning setup to build on:
 - **Four baselines** to compare against: an MLP on Morgan fingerprints, on RDKit descriptors, and on both, plus LightGBM on both.
 - **A simple fine-tuning protocol**: fixed train/validation/test splits, one training loop for all models, and the challenge metrics.
 
-Your job is to extend it: add at least one more foundation model, try designing better readouts and training protocols, etc. and compare.
+Your job is to extend and change it to complete the tasks in the project description.
 
 Along the way you can submit your test predictions to the [project leaderboard](https://khelverskovp.github.io/dtu-cyp-leaderboard/) to see how you rank.
 
