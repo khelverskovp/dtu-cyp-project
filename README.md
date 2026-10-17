@@ -1,4 +1,4 @@
-# CYP Inhibition — Starter Code
+# CYP Inhibition 🧬 - Starter code
 
 **[Leaderboard](https://khelverskovp.github.io/dtu-cyp-leaderboard/)** · [Atom-JEPA](https://github.com/khelverskovp/atom-jepa) · [Dataset](https://huggingface.co/datasets/openadmet/cyp-challenge-train-test)
 
@@ -9,7 +9,7 @@ The data comes from the [OpenADMET CYP Inhibition Blind Challenge](https://huggi
 The repo gives you a simple, working fine-tuning setup to build on:
 
 - **Atom-JEPA**: code for loading the pretrained Atom-JEPA model and fine-tuning it with a simple readout head.
-- **Three baselines** to compare against: an MLP on Morgan fingerprints, on RDKit descriptors, and on both.
+- **Four baselines** to compare against: an MLP on Morgan fingerprints, on RDKit descriptors, and on both, plus LightGBM on both.
 - **A simple fine-tuning protocol**: fixed train/validation/test splits, one training loop for all models, and the challenge metrics.
 
 Your job is to extend it: add at least one more foundation model, try designing better readouts and training protocols, etc. and compare.
@@ -24,6 +24,7 @@ Along the way you can submit your test predictions to the [project leaderboard](
 | `finetune.py` | Trains one model, picks the best epoch on validation, then evaluates on test |
 | `models/atom_jepa.py` | Atom-JEPA encoder + readout head |
 | `models/baselines.py` | Morgan / RDKit features + readout head |
+| `models/gbm.py` | LightGBM on Morgan + RDKit features |
 | `models/readouts.py` | Readout heads (linear, MLP). **Add your own here** |
 | `conf/` | [Hydra](https://hydra.cc) configs: `config.yaml` (shared), `model/` (one per model), `readout/` (one per head) |
 | `prepare_data.sh`, `finetune.sh` | DTU HPC job scripts. Logs go to `outputs/` |
@@ -56,7 +57,7 @@ bsub -env "MODEL=morgan_mlp, TASK=classification" < finetune.sh
 bsub -env "MODEL=atom_jepa, OVERRIDES=readout=linear train.epochs=10" < finetune.sh
 ```
 
-`MODEL` is `atom_jepa`, `morgan_mlp`, `rdkit_mlp` or `morgan_rdkit_mlp`. `TASK` is `regression` or `classification`. `OVERRIDES` takes any Hydra settings, separated by spaces. Check jobs with `bjobs`.
+`MODEL` is `atom_jepa`, `morgan_mlp`, `rdkit_mlp`, `morgan_rdkit_mlp` or `morgan_rdkit_lgbm`. `TASK` is `regression` or `classification`. `OVERRIDES` takes any Hydra settings, separated by spaces. Check jobs with `bjobs`.
 
 ## Tasks and results
 
@@ -93,8 +94,9 @@ The original challenge ends before this project starts, so we run our own leader
 | `morgan_mlp` | Morgan count fingerprint | `mlp` |
 | `rdkit_mlp` | 200 normalized RDKit descriptors | `mlp` |
 | `morgan_rdkit_mlp` | Both, concatenated | `mlp` |
+| `morgan_rdkit_lgbm` | Both, concatenated | none (LightGBM) |
 
-The baselines follow the MLP baselines in the [Atom-JEPA repository](https://github.com/khelverskovp/atom-jepa). Any readout works with any model, e.g. `model=atom_jepa readout=linear`.
+The MLP baselines follow those in the [Atom-JEPA repository](https://github.com/khelverskovp/atom-jepa). Any readout works with any neural model, e.g. `model=atom_jepa readout=linear`. `morgan_rdkit_lgbm` is a gradient-boosted tree baseline outside the epoch loop: one LightGBM model per enzyme, with early stopping on validation.
 
 > **Extending the code is the core of the project.** Below is how to add your own readout head and your own model.
 

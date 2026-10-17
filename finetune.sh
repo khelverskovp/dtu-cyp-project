@@ -12,7 +12,7 @@ set -euo pipefail
 
 # Choose the model and task at submission (LSF only passes variables given with -env):
 #   bsub -env "MODEL=morgan_mlp, TASK=classification" < finetune.sh
-# MODEL: atom_jepa | morgan_mlp | rdkit_mlp | morgan_rdkit_mlp (see conf/model/)
+# MODEL: atom_jepa | morgan_mlp | rdkit_mlp | morgan_rdkit_mlp | morgan_rdkit_lgbm (see conf/model/)
 # TASK: regression | classification
 # OVERRIDES: extra Hydra overrides separated by spaces, e.g. OVERRIDES="train.epochs=50"
 MODEL="${MODEL:-atom_jepa}"

@@ -17,6 +17,7 @@ import torch
 from torch import nn
 from sklearn.metrics import matthews_corrcoef, mean_absolute_error, r2_score, roc_auc_score, average_precision_score
 from models import MODELS
+from models.gbm import LightGBMModel
 from prepare_data import REG, CLS
 
 
@@ -78,37 +79,10 @@ def predict(model, loader, task, mean, std):
     return values
 
 
-@hydra.main(config_path='conf', config_name='config', version_base='1.3')
-def main(cfg):
-    if cfg.task not in ('regression', 'classification'):
-        raise ValueError(f'Unknown task {cfg.task!r}')
+def train_torch(cfg, train, val, targets, task, data, out):
+    """Trains a torch model with the epoch loop; returns a function frame -> predictions."""
     if cfg.train.epochs < 1 or cfg.train.batch_size < 1:
         raise ValueError('epochs and batch_size must be positive')
-    out = Path(HydraConfig.get().runtime.output_dir)
-    data = Path(cfg.data)
-    random.seed(cfg.seed)
-    np.random.seed(cfg.seed)
-    torch.manual_seed(cfg.seed)
-    torch.cuda.manual_seed_all(cfg.seed)
-    task = cfg.task
-    targets = REG if task == 'regression' else CLS
-    train_all = pd.read_csv(data / task / 'train.csv')
-    val_all = pd.read_csv(data / task / 'val.csv')
-    frame = pd.concat([train_all, val_all], ignore_index=True)
-    train = train_all[train_all[targets].notna().any(axis=1)].copy()
-    val = val_all[val_all[targets].notna().any(axis=1)].copy()
-    if not len(train) or not len(val):
-        raise ValueError('Empty train or validation set')
-    if set(train_all.canonical_smiles) & set(val_all.canonical_smiles):
-        raise ValueError('Exact molecule leakage between train and validation')
-    for t in targets:
-        if not train[t].notna().any() or not val[t].notna().any():
-            raise ValueError(f'Missing train/validation labels for {t}')
-        if task == 'classification':
-            if not set(frame[t].dropna()).issubset({0, 1}):
-                raise ValueError(f'Nonbinary labels: {t}')
-            if train[t].nunique() != 2 or val[t].nunique() != 2:
-                raise ValueError(f'{t} needs both classes in train and validation; revise split')
     model = MODELS[cfg.model.type](cfg.model, cfg.readout, len(targets), data, cfg.device)
     model.fit_preprocessing(train)  # Feature scaling etc. is fitted on the training split ONLY.
     mean = torch.zeros(len(targets), device=model.device)
@@ -122,18 +96,6 @@ def main(cfg):
     train_loader = model.loader(train, targets, batch_size, shuffle=True)
     val_loader = model.loader(val, targets, batch_size)
     optimizer = torch.optim.AdamW(model.param_groups(), weight_decay=cfg.train.weight_decay)
-    config = OmegaConf.to_container(cfg, resolve=True)
-    packages = ['torch', 'atom-jepa', 'rdkit', 'numpy', 'pandas', 'scikit-learn', 'hydra-core', 'descriptastorus']
-    config.update(targets=targets, output_dir=str(out),
-                  versions={k: importlib.metadata.version(k) for k in packages},
-                  preparation=json.loads((data / 'manifest.json').read_text()),
-                  split_sha256={name: hashlib.sha256((data / task / f'{name}.csv').read_bytes()).hexdigest()
-                                for name in ['train', 'val', 'test']})
-    (out / 'config.json').write_text(json.dumps(config, indent=2))
-    frame[['Molecule_Name', 'key', 'split']].to_csv(out / 'split.csv', index=False)
-    # Sanity baseline fitted on training labels only.
-    baseline = np.tile(train[targets].mean().to_numpy(), (len(val), 1))
-    (out / 'baseline_metrics.json').write_text(json.dumps(metrics(val, baseline, targets, task), indent=2))
     best = float('inf')
     for epoch in range(1, cfg.train.epochs + 1):
         model.train()
@@ -165,11 +127,68 @@ def main(cfg):
         if selection < best:
             best = selection
             torch.save({'model': model.state_dict(), 'mean': mean, 'std': std,
-                        'epoch': epoch, 'config': config}, out / 'best.pt')
+                        'epoch': epoch, 'config': cfg_dict(cfg)}, out / 'best.pt')
     saved = torch.load(out / 'best.pt', map_location=model.device, weights_only=True)
     model.load_state_dict(saved['model'])
     mean, std = saved['mean'], saved['std']
-    validation_predictions = predict(model, val_loader, task, mean, std)
+    print(f'Best epoch: {saved["epoch"]}', flush=True)
+    return lambda frame: predict(model, model.loader(frame, targets, batch_size), task, mean, std)
+
+
+def cfg_dict(cfg):
+    return OmegaConf.to_container(cfg, resolve=True)
+
+
+@hydra.main(config_path='conf', config_name='config', version_base='1.3')
+def main(cfg):
+    if cfg.task not in ('regression', 'classification'):
+        raise ValueError(f'Unknown task {cfg.task!r}')
+    out = Path(HydraConfig.get().runtime.output_dir)
+    data = Path(cfg.data)
+    random.seed(cfg.seed)
+    np.random.seed(cfg.seed)
+    torch.manual_seed(cfg.seed)
+    torch.cuda.manual_seed_all(cfg.seed)
+    task = cfg.task
+    targets = REG if task == 'regression' else CLS
+    train_all = pd.read_csv(data / task / 'train.csv')
+    val_all = pd.read_csv(data / task / 'val.csv')
+    frame = pd.concat([train_all, val_all], ignore_index=True)
+    train = train_all[train_all[targets].notna().any(axis=1)].copy()
+    val = val_all[val_all[targets].notna().any(axis=1)].copy()
+    if not len(train) or not len(val):
+        raise ValueError('Empty train or validation set')
+    if set(train_all.canonical_smiles) & set(val_all.canonical_smiles):
+        raise ValueError('Exact molecule leakage between train and validation')
+    for t in targets:
+        if not train[t].notna().any() or not val[t].notna().any():
+            raise ValueError(f'Missing train/validation labels for {t}')
+        if task == 'classification':
+            if not set(frame[t].dropna()).issubset({0, 1}):
+                raise ValueError(f'Nonbinary labels: {t}')
+            if train[t].nunique() != 2 or val[t].nunique() != 2:
+                raise ValueError(f'{t} needs both classes in train and validation; revise split')
+    config = cfg_dict(cfg)
+    packages = ['torch', 'atom-jepa', 'rdkit', 'numpy', 'pandas', 'scikit-learn', 'hydra-core',
+                'descriptastorus', 'lightgbm']
+    config.update(targets=targets, output_dir=str(out),
+                  versions={k: importlib.metadata.version(k) for k in packages},
+                  preparation=json.loads((data / 'manifest.json').read_text()),
+                  split_sha256={name: hashlib.sha256((data / task / f'{name}.csv').read_bytes()).hexdigest()
+                                for name in ['train', 'val', 'test']})
+    (out / 'config.json').write_text(json.dumps(config, indent=2))
+    frame[['Molecule_Name', 'key', 'split']].to_csv(out / 'split.csv', index=False)
+    # Sanity baseline fitted on training labels only.
+    baseline = np.tile(train[targets].mean().to_numpy(), (len(val), 1))
+    (out / 'baseline_metrics.json').write_text(json.dumps(metrics(val, baseline, targets, task), indent=2))
+    if cfg.model.type == 'lightgbm':
+        model = LightGBMModel(cfg.model, data, cfg.seed)
+        best = model.fit(train, val, targets, task, out)
+        (out / 'best_iterations.json').write_text(json.dumps(best, indent=2))
+        predict_frame = model.predict
+    else:
+        predict_frame = train_torch(cfg, train, val, targets, task, data, out)
+    validation_predictions = predict_frame(val)
     (out / 'validation_metrics.json').write_text(json.dumps(metrics(val, validation_predictions, targets, task), indent=2))
     vp = val[['SMILES', 'Molecule_Name']].copy()
     vp[targets] = validation_predictions
@@ -180,15 +199,14 @@ def main(cfg):
         raise ValueError('Empty test set')
     if set(frame.canonical_smiles) & set(test.canonical_smiles):
         raise ValueError('Exact molecule leakage into the test split')
-    predictions = predict(model, model.loader(test, targets, batch_size), task, mean, std)
+    predictions = predict_frame(test)
     test_scores = metrics(test, predictions, targets, task)
     (out / 'test_metrics.json').write_text(json.dumps(test_scores, indent=2))
     # Classification exports probabilities; metrics use a fixed 0.5 threshold.
     output = test[['SMILES', 'Molecule_Name']].copy()
     output[targets] = predictions
     output.to_csv(out / 'test_predictions.csv', index=False)
-    print(f'Best epoch: {saved["epoch"]}; held-out test metrics: {test_scores}')
-
+    print(f'Held-out test metrics: {test_scores}')
 
 if __name__ == '__main__':
     main()
