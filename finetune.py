@@ -57,6 +57,32 @@ def metrics(frame, predictions, targets, task):
                               'AUROC': float(roc_auc_score(y, pred)) if both else None,
                               'AP': float(average_precision_score(y, pred)) if both else None,
                               'n': len(y), 'positive_fraction': float(y.mean())}
+
+            # Classification diagnostics
+            threshold = 0.5
+            predicted = pred >= threshold
+
+            tp = np.sum((y == 1) & predicted)
+            tn = np.sum((y == 0) & ~predicted)
+            fp = np.sum((y == 0) & predicted)
+            fn = np.sum((y == 1) & ~predicted)
+
+            result[target].update({
+                'confusion_matrix': {
+                    'TP': int(tp),
+                    'TN': int(tn),
+                    'FP': int(fp),
+                    'FN': int(fn)
+                },
+                'predicted_positive_fraction': float(predicted.mean()),
+                'probability_mean': float(pred.mean()),
+                'probability_std': float(pred.std()),
+                'near_threshold_fraction': float(
+                    np.mean(np.abs(pred - threshold) <= 0.05)
+                )
+            })
+
+
     primary = 'ST-RAE' if task == 'regression' else 'MCC'
     scores = [result[t][primary] for t in targets]
     # Do not silently omit an endpoint when reporting a macro score.
